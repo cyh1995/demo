@@ -1,17 +1,17 @@
 package com.example.demo.controller;
-
 import com.example.demo.dto.AccessTokenDTO;
 import com.example.demo.dto.GithubUserDTO;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.model.UserDO;
 import com.example.demo.provider.GithubProvider;
+import com.example.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.UUID;
 
@@ -21,6 +21,8 @@ public class AuthorizeController {
     private GithubProvider githubProvider;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private UserService userService;
     @Value("${github.client.id}")
     private String clientId;
     @Value("${github.client.secret}")
@@ -47,9 +49,7 @@ public class AuthorizeController {
             userDO.setName(githubUser.getName());
             userDO.setAccessId(String.valueOf(githubUser.getId()));
             userDO.setAvatarUrl(githubUser.getAvatarUrl());
-            userDO.setGmtCreate(System.currentTimeMillis());
-            userDO.setGmtModified(userDO.getGmtCreate());
-            userMapper.insert(userDO);
+            userService.creatOrUpdate(userDO);
             response.addCookie(new Cookie("token",token));
 
             return "redirect:/";
@@ -57,6 +57,14 @@ public class AuthorizeController {
             return "redirect:/";
         }
 
+    }
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request,HttpServletResponse response){
+        request.getSession().removeAttribute("user");
+        Cookie cookie = new Cookie("token",null);
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+        return "redirect:/";
     }
 
 }
